@@ -6,6 +6,9 @@ git help <verb> (or git <verb> --help)
 2. ~/.gitconfig (or ~/.config/git/config) 
 3. .git/config in a Git repo dir (config specific to this repo) 
 
+# change default editor used by git to vim
+git config --global core.editor "vim"
+
 #list current config (based on current dir.., would show overwritten param at current proj dir)
 git config --list
 
@@ -13,17 +16,20 @@ git config --list
 git config --global user.name "John Smith"
 git config --global user.email j@ex.com
 
-#chaning the default editor (used, for ex, when editing commit message) 
+#changing the default editor (used, for ex, when editing commit message) 
 git config --global core.editor emacs 
 
 # initial command to create a git repo to track current dir as project (will create the db repo under /.git)
 git init
 
-
 #init a new repo from a server (mylibgit is optional when you want target dir to be named differently)
-
 git clone https://github.com/libgit2/libgit2 mylibgit
 
+
+# Pour utiliser la stratégie rebase (merger commits locaux lors de mise à jour 
+# du repository local p/r au serveur (git pull) qui est en retard p/r au serveur
+git config --global branch.autosetuprebase always
+git config --global branch.master.rebase true
 
 
 # adding files to index (more precisely staging specified file(s) or dir for upcoming commit) 
@@ -44,8 +50,6 @@ build/    (ignore all files under build dir)
 
 
 # git diff
-
-
 
 # lifecycle of files under a git repo is:  
 'Untracked'  (files not yet considered in repo but found un working dir.. must git add to change this state)
@@ -90,11 +94,15 @@ git log  (use -p showing the diff introduced in each commit, use -2 to only show
 #UNDOING things
 
 #to modify previous commit (in this case because we forgot to stage a file)
-# we use --amend (could be used to change commit message, more interestingly to combine new staged stages with previous commit..instead of commiting enire new snapshot ) 
+# we use --amend (could be used to change commit message and/or combine new staged stages with previous commit..instead of commiting enire new snapshot) 
 git add forgotFile
 git commit --amend
 
-#Git reset changes the snapshot history, so should only be aplied locally:  NEVER use git reset <commit> after <commit> have been pushed to a public repository
+# annuler un commit (techniquement ceci rajoute un commit inverse)
+git revert idCommitaAnnuler
+
+# reset changes the git snapshot history, to be applied locally:  NEVER use git reset <commit> after <commit> have been pushed to a public repository
+git reset idcommit
 
 #reset the staging area to match the most recent commit while leaving working dir unchanged
 #this gives the opportunity to re-build the staged snapshot from scratch
@@ -220,47 +228,56 @@ git rebase master
 git checkout master
 git merge experiment
 
-###todo: merge ex.   and discuss differences
+
+# to create a Tag, first create it locally 
+git tag -a mytag_v.1.1 noCommitId
+# push it on the remote repo "origin"
+git push origin --tag
+# remove the tag mytag_v.1.1 locally
+git tag -d mytag_v.1.1
+# remove the tag mytag_v.1.1 on remote 
+git push origin :tags/mytag_v.1.1
 
 
 
-#to delete the remote reference by origin from local repoy
-git remote remove origin
-#to remove the server-side repo, you need to ssh on the server:
-ssh bbpgit.epfl.ch delete rm user/mouellet/notebook-experiment
+-------------------------------------------------------------------------------------------
+Workflow Git to work on any new development using local branch only:
+-----------------------------------------------------------------------------
+
+-- Before creating a "new_dev" branch, refresh local master with an up-to-date origin/master
+git checkout master
+git pull   # ou git fetch + git merge origin/master
+
+--create and check out this "new_dev" local branch
+git checkout -b new_dev
+
+-- work on this new branch and once finished, add files to statging and commit 
+git add .
+git commit -m "My changes on this new branch"
+
+
+-- Before rebasing to master, check for any changes done on remote:
+git checkout master; git pull
+
+-- Go back to new branch "new_dev" and rebase it to master
+-- suite à ce rebase, y'a potentiellement des changements à controler
+git checkout new_dev
+git rebase master
+
+-- Checkout master (by ensuring it is still up-to-date) and merge into it 
+git checkout master; git pull
+git merge new_dev
+git push
+
+-- Delete local branch "new_dev" branch
+git branch -d new_dev
 
 
 
 
-###################### the NPI process with code Review ########################
 
-# edit my files locally
-...
-#commit
-git commit -m "msg"
-
-# reorganizing the commits and messages
-git rebase -i origin/dev
-
-# push for review
-git review -R
-
-# correct code after review
-...
-# adding all modifications
-git add . --all
-
-# commiting and sending back for review again
-git commit -a --amend
-git review
-
-################################################################################
-
-
-
-
-  
-
-
+----------------------------------------
+--pretty print the log history
+git log --oneline --abbrev-commit --all --graph --decorate --color
 
 
